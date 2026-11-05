@@ -164,6 +164,7 @@ public partial class App : Application
         ApplyAutostart();
         WatchDesktop();
         CatchUpGlass();
+        WatchTimeZone();
 
         _watcher = new FileSystemWatcher(root)
         {
@@ -683,6 +684,7 @@ public partial class App : Application
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add(Loc.T("Открыть «Плитки»"), null, (_, _) => OpenHub("workshop"));
         menu.Items.Add(Loc.T("Мастерская виджетов"), null, (_, _) => OpenHub("workshop"));
+        menu.Items.Add(Loc.T("Обновить"), null, (_, _) => RefreshEverything());
         menu.Items.Add(Loc.T("Новая папка"), null, (_, _) => NewFolder());
         menu.Items.Add(Loc.T("Показать / спрятать сетку"), null, (_, _) => ToggleGrid());
         menu.Items.Add(Loc.T("Редактировать сетку…"), null, (_, _) => EditGrid());

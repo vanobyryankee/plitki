@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using Tiles.Core;
 
@@ -12,6 +12,58 @@ public partial class App
 
     internal IReadOnlyList<TileWindow> Tiles => _tiles;
 
+    /// <summary>
+    /// Часовой пояс: .NET запоминает его при запуске, а Windows меняет сам (автоопределение по сети, VPN) —
+    /// часы на столе убегали на пару часов. Сбрасываем запомненный пояс, когда Windows сообщает о смене
+    /// времени, и на всякий случай раз в 5 минут.
+    /// </summary>
+    private void WatchTimeZone()
+    {
+        Microsoft.Win32.SystemEvents.TimeChanged += (_, _) => Dispatcher.BeginInvoke(() =>
+        {
+            TimeZoneInfo.ClearCachedData();
+            Log($"time changed: zone {TimeZoneInfo.Local.Id}");
+            RestartWidgets();
+        });
+        var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(5) };
+        string zone = TimeZoneInfo.Local.Id;
+        t.Tick += (_, _) =>
+        {
+            TimeZoneInfo.ClearCachedData();
+            if (TimeZoneInfo.Local.Id == zone) return;
+            zone = TimeZoneInfo.Local.Id;
+            Log($"time zone now {zone}");
+            RestartWidgets();
+        };
+        t.Start();
+    }
+
+    /// <summary>«Обновить» в трее: заново время, обои под стеклом, папки и все виджеты.</summary>
+    internal void RefreshEverything()
+    {
+        Log("refresh all");
+        TimeZoneInfo.ClearCachedData();
+        System.Globalization.CultureInfo.CurrentCulture.ClearCachedData();
+        Sync();
+        RefreshAll();
+        RestartWidgets();
+        RefreshGlass();
+    }
+
+    /// <summary>Все включённые виджеты собираем заново (на месте, с теми же настройками).</summary>
+    private void RestartWidgets()
+    {
+        foreach (var info in Config.Widgets.Where(w => w.Enabled).ToList())
+        {
+            if (!_widgets.Remove(info.Kind, out var win)) continue;
+            _selection.Remove(win.Id);
+            win.View.Stop();
+            win.Close();
+            OpenWidget(info);
+        }
+        WidgetsChanged?.Invoke();
+    }
+
     /// <summary>Сменить язык ("" — как в Windows): запоминаем и перерисовываем всё сразу, без перезапуска.</summary>
     internal void SetLanguage(string code)
     {
@@ -24,15 +76,7 @@ public partial class App
     private void OnLanguageChanged()
     {
         Log($"language {Loc.Lang}");
-        foreach (var info in Config.Widgets.Where(w => w.Enabled).ToList())
-        {
-            if (!_widgets.Remove(info.Kind, out var win)) continue;
-            _selection.Remove(win.Id);
-            win.View.Stop();
-            win.Close();
-            OpenWidget(info);
-        }
-        WidgetsChanged?.Invoke();
+        RestartWidgets();
         if (_hub is { } hub)
         {
             var page = hub.CurrentPage;
