@@ -53,6 +53,8 @@ public sealed class TilesConfig
     /// <summary>Сохранённые расстановки стола и последняя выбранная (её ставим сами после игры/смены мониторов).</summary>
     public List<LayoutPreset> Presets { get; set; } = new();
     public string? ActivePreset { get; set; }
+    /// <summary>Домашний расклад мониторов (под него расставлен стол); игра его не перезаписывает.</summary>
+    public string HomeScreens { get; set; } = "";
     /// <summary>Ярлык «Плитки» на стол уже клали (удалённый не возвращаем).</summary>
     public bool ShortcutsMade { get; set; }
     /// <summary>Своя клетка сетки (подогнанная руками под ярлыки на столе); NaN — как у Windows.</summary>

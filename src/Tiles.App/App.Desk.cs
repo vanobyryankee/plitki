@@ -118,6 +118,20 @@ public partial class App
             RefreshGlass();
             return;
         }
+        if (ScreenLayout.IsShrunk(_homeScreens, key))
+        {
+            // игра уменьшила экран: это временно, сколько бы она ни шла, дом не меняем
+            Log($"screens shrunk {key} (home {_homeScreens}) — game, places kept");
+            return;
+        }
+        if (ScreenLayout.IsShrunk(key, _homeScreens))
+        {
+            // экран стал больше домашнего: дом был записан неверно, этот и есть настоящий
+            Log($"screens grew {key} (home {_homeScreens})");
+            AdoptScreens();
+            if (Presets.Find(Config, Config.ActivePreset) is { } ap) ApplyPreset(ap.Name);
+            return;
+        }
         Log($"screens changed {key} (home {_homeScreens}) — places kept");
         _adoptScreens ??= new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
         _adoptScreens.Tick -= AdoptTick;
@@ -131,7 +145,17 @@ public partial class App
     internal void AdoptScreens()
     {
         ReadGridMetrics();
-        _homeScreens = ScreensKey();
+        var now = ScreensKey();
+        if (ScreenLayout.IsShrunk(_homeScreens, now))
+        {
+            // «Обновить» во время игры: дом не трогаем, только стекло
+            Log($"screens adopt skipped {now} (home {_homeScreens}) — game");
+            RefreshGlass();
+            return;
+        }
+        _homeScreens = now;
+        Config.HomeScreens = now;
+        SaveConfigSoon();
         Log($"screens adopted {_homeScreens}");
         PlaceAll();
         foreach (var w in _widgets.Values) { var p = Fit(w.Rect, w.Snap); w.MoveTo(p.X, p.Y); }

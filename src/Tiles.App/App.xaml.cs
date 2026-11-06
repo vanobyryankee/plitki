@@ -182,7 +182,9 @@ public partial class App : Application
         _watcher.Created += h; _watcher.Deleted += h; _watcher.Renamed += (s, a) => h(s, a);
         _debounce.Tick += (_, _) => { _debounce.Stop(); Sync(); };
 
-        _homeScreens = ScreensKey();
+        _homeScreens = ScreenLayout.HomeOnStart(Config.HomeScreens, ScreensKey());
+        if (Config.HomeScreens != _homeScreens) { Config.HomeScreens = _homeScreens; SaveConfigSoon(); }
+        Log($"screens home {_homeScreens} (now {ScreensKey()})");
         SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(OnDisplayChanged);
         StartWidgets();
         Untangle();
