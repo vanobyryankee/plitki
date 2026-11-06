@@ -254,5 +254,6 @@
  "{0} файлов": "{0} files",
  "Как в Windows ({0})": "Same as Windows ({0})",
  "Язык": "Language",
- "Надписи в окне, меню и виджетах. Новые папки получают названия на этом языке.": "Text in the window, menus and widgets. New folders get names in this language."
+ "Надписи в окне, меню и виджетах. Новые папки получают названия на этом языке.": "Text in the window, menus and widgets. New folders get names in this language.",
+ "Музыка из браузера (и YouTube тоже)": "Music from the browser (YouTube too)"
 }

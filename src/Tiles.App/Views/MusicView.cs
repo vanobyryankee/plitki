@@ -46,10 +46,12 @@ internal sealed class MusicView : WidgetView
         Opt(Loc.T("Фон в цвет обложки"), "tint"),
         Opt(Loc.T("Полоска прогресса и время"), "bar"),
         Opt(Loc.T("Альбом"), "album", false),
+        Opt(Loc.T("Музыка из браузера (и YouTube тоже)"), "browser", false),
     };
 
     public override void ApplyOptions()
     {
+        if (Live && _manager != null) Dispatcher.BeginInvoke(Bind); // «Музыка из браузера» могла поменяться
         _cover.Visibility = Flag("cover") ? Visibility.Visible : Visibility.Collapsed;
         _backdrop.Visibility = Flag("tint") ? Visibility.Visible : Visibility.Collapsed;
         var bar = Flag("bar") ? Visibility.Visible : Visibility.Collapsed;
@@ -209,6 +211,7 @@ internal sealed class MusicView : WidgetView
         {
             _manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
             _manager.CurrentSessionChanged += (_, _) => Dispatcher.BeginInvoke(Bind);
+            _manager.SessionsChanged += (_, _) => Dispatcher.BeginInvoke(Bind);
             Bind();
         }
         catch (Exception ex) { App.Current.Log("music unavailable: " + ex.Message); }
@@ -236,7 +239,7 @@ internal sealed class MusicView : WidgetView
     {
         if (!Live) return;
         Unbind();
-        _session = _manager?.GetCurrentSession();
+        _session = PickSession();
         if (_session != null)
         {
             _session.PlaybackInfoChanged += OnPlayback;
@@ -248,6 +251,30 @@ internal sealed class MusicView : WidgetView
         ReadPlayback();
         ReadTimeline();
         ReadMedia();
+    }
+
+    /// <summary>
+    /// Только музыка: Яндекс Музыка, Spotify, VK Музыка и другие плееры. Браузер (YouTube) и видеоплееры
+    /// пропускаем; браузер — только если включено «Музыка из браузера».
+    /// </summary>
+    private GlobalSystemMediaTransportControlsSession? PickSession()
+    {
+        if (_manager == null) return null;
+        try
+        {
+            var all = _manager.GetSessions().ToList();
+            var list = all.Select(s =>
+            {
+                bool playing = false;
+                try { playing = s.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing; } catch { }
+                return (s.SourceAppUserModelId ?? "", playing);
+            }).ToList();
+            int i = Music.Pick(list, _manager.GetCurrentSession()?.SourceAppUserModelId, Flag("browser", false));
+            var skipped = list.Where(x => !Music.Allowed(x.Item1, Flag("browser", false))).Select(x => x.Item1).ToList();
+            if (skipped.Count > 0) App.Current.Log("music skip " + string.Join(", ", skipped));
+            return i >= 0 ? all[i] : null;
+        }
+        catch (Exception ex) { App.Current.Log("music pick failed: " + ex.Message); return null; }
     }
 
     private void Unbind()
