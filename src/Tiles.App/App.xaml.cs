@@ -182,12 +182,10 @@ public partial class App : Application
         _watcher.Created += h; _watcher.Deleted += h; _watcher.Renamed += (s, a) => h(s, a);
         _debounce.Tick += (_, _) => { _debounce.Stop(); Sync(); };
 
-        SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(() =>
-        {
-            ReadGridMetrics(); PlaceAll();
-            foreach (var w in _widgets.Values) { var p = Fit(w.Rect, w.Snap); w.MoveTo(p.X, p.Y); }
-        });
+        _homeScreens = ScreensKey();
+        SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(OnDisplayChanged);
         StartWidgets();
+        Untangle();
         Marquee.Start();
         EnsureShortcuts();
         if (e.Args.Contains("--hub")) OpenHub("workshop");

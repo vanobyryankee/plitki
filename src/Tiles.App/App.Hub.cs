@@ -47,7 +47,7 @@ public partial class App
         Sync();
         RefreshAll();
         RestartWidgets();
-        RefreshGlass();
+        AdoptScreens(); // и под текущий расклад экранов, и расцепить слипшиеся
     }
 
     /// <summary>Все включённые виджеты собираем заново (на месте, с теми же настройками).</summary>

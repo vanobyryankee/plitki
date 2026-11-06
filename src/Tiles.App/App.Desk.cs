@@ -26,6 +26,77 @@ public partial class App
         _saveSoon.Stop(); _saveSoon.Start();
     }
 
+    // ---- смена экранов ----
+
+    /// <summary>Расклад мониторов, под который расставлены плитки («дом»).</summary>
+    private string _homeScreens = "";
+    private System.Windows.Threading.DispatcherTimer? _adoptScreens;
+
+    private string ScreensKey() => string.Join(";", Screens.Select(s => $"{s.X:0},{s.Y:0},{s.W:0}x{s.H:0}"));
+
+    /// <summary>
+    /// Игра на весь экран меняет разрешение — раньше плитки поджимались под него и так и сохранялись
+    /// (слипались, наезжали друг на друга). Теперь: пока расклад экранов не «домашний», места не трогаем;
+    /// вернулся домашний — встаём ровно туда, где были. Новый расклад держится 10 минут или нажали
+    /// «Обновить» — значит, это надолго: принимаем его как домашний и расставляем заново.
+    /// </summary>
+    private void OnDisplayChanged()
+    {
+        ReadGridMetrics();
+        var key = ScreensKey();
+        _adoptScreens?.Stop();
+        if (key == _homeScreens)
+        {
+            Log($"screens back home {key}");
+            PlaceAll();
+            RefreshGlass();
+            return;
+        }
+        Log($"screens changed {key} (home {_homeScreens}) — places kept");
+        _adoptScreens ??= new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
+        _adoptScreens.Tick -= AdoptTick;
+        _adoptScreens.Tick += AdoptTick;
+        _adoptScreens.Start();
+    }
+
+    private void AdoptTick(object? s, EventArgs e) { _adoptScreens?.Stop(); AdoptScreens(); }
+
+    /// <summary>Текущий расклад экранов становится домашним: всё расставить под него.</summary>
+    internal void AdoptScreens()
+    {
+        ReadGridMetrics();
+        _homeScreens = ScreensKey();
+        Log($"screens adopted {_homeScreens}");
+        PlaceAll();
+        foreach (var w in _widgets.Values) { var p = Fit(w.Rect, w.Snap); w.MoveTo(p.X, p.Y); }
+        Untangle();
+        RefreshGlass();
+    }
+
+    /// <summary>Папки и виджеты, вставшие друг на друга, расходятся по свободным клеткам рядом.</summary>
+    internal void Untangle()
+    {
+        var placed = new List<RectD>();
+        bool moved = false;
+        foreach (var item in DeskItems().OrderBy(i => i.Locked ? 0 : 1).ToList())
+        {
+            var r = item.Rect;
+            if (!item.Locked && placed.Any(p => Arrange.Overlaps(p, r)))
+            {
+                var c = CellAt(r);
+                if (Arrange.FreeSpot(r, placed, WorkAreaAt(r), c.W, c.H) is { } spot)
+                {
+                    Log($"untangle {item.Id} {r.X:0},{r.Y:0} -> {spot.X:0},{spot.Y:0}");
+                    item.MoveTo(spot.X, spot.Y);
+                    r = item.Rect;
+                    moved = true;
+                }
+            }
+            placed.Add(r);
+        }
+        if (moved) SaveConfigSoon();
+    }
+
     // ---- виджеты ----
 
     private void StartWidgets()
