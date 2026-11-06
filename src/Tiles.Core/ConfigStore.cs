@@ -18,6 +18,8 @@ public sealed class TileInfo
     /// <summary>Без сетки — прилипать к краям других плиток (красные линии).</summary>
     public bool Align { get; set; } = true;
     public TileStyle Style { get; set; } = new();
+    /// <summary>Свой порядок ярлыков (имена файлов); пусто — по алфавиту. Первые идут в превью.</summary>
+    public List<string> Order { get; set; } = new();
 }
 
 /// <summary>Виджет на столе. Место и размер в точках экрана (NaN — ещё не ставили), Props — его настройки.</summary>
@@ -85,6 +87,7 @@ public sealed class TilesConfig
         {
             t.Style ??= Defaults.Clone();
             t.Style.Normalize();
+            t.Order ??= new();
         }
         Widgets ??= new();
         Widgets.RemoveAll(w => !WidgetKinds.Contains(w.Kind));

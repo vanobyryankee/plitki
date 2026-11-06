@@ -577,6 +577,20 @@ public partial class App : Application
         ItemsChanged(folder);
     }
 
+    /// <summary>Ярлыки папки в порядке владельца (новые — в конце по алфавиту).</summary>
+    internal IReadOnlyList<string> OrderedItems(string folder)
+        => ItemOrder.Sort(Store.Items(folder), Config.Tiles.FirstOrDefault(t => t.Name == folder)?.Order);
+
+    /// <summary>Запомнить новый порядок ярлыков папки и перерисовать её плитку.</summary>
+    internal void SetOrder(string folder, IEnumerable<string> paths)
+    {
+        if (Config.Tiles.FirstOrDefault(t => t.Name == folder) is not { } t) return;
+        t.Order = paths.Select(p => Path.GetFileName(p)).ToList();
+        Log($"order {folder}: {string.Join(", ", t.Order.Take(6))}");
+        SaveConfig();
+        foreach (var w in _tiles.Where(x => x.Folder == folder)) w.Refresh();
+    }
+
     /// <summary>Содержимое папки поменялось: подобрать название и перерисовать.</summary>
     internal void ItemsChanged(string folder)
     {

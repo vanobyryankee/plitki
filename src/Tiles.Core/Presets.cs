@@ -59,6 +59,7 @@ public static class Presets
             t.X = saved.X; t.Y = saved.Y; t.Cols = saved.Cols; t.Rows = saved.Rows;
             t.AutoName = saved.AutoName; t.Locked = saved.Locked; t.Align = saved.Align;
             t.Style = Copy(saved.Style);
+            t.Order = (saved.Order ?? new()).ToList();
         }
         foreach (var saved in p.Widgets)
         {

@@ -337,7 +337,7 @@ internal sealed class HubWindow : Window
             Ui.Button(Loc.T("Новая папка"), () => { App.Current.NewFolder(); ShowPage("folders", false); }, primary: true, glyph: Glyphs.Plus));
         foreach (var tile in App.Current.Tiles.OrderBy(t => t.Folder))
         {
-            var items = App.Current.Store.Items(tile.Folder);
+            var items = App.Current.OrderedItems(tile.Folder);
             var icons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Width = 132 };
             foreach (var p in items.Take(4))
             {

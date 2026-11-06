@@ -212,7 +212,7 @@ internal sealed class TileWindow : Window, IDeskItem
         var s = info.Style;
         _label.Text = Folder;
         ToolTip = Folder;
-        var items = App.Current.Store.Items(Folder);
+        var items = App.Current.OrderedItems(Folder);
         var (shown, more) = Layout.Preview(items.Count, info.Cols, info.Rows);
         _grid.Columns = info.Cols;
         _grid.Rows = info.Rows;

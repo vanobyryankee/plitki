@@ -120,7 +120,7 @@ internal sealed class PanelWindow : Window
 
     private (double W, double H) Measure()
     {
-        int count = App.Current.Store.Items(Folder).Count;
+        int count = App.Current.OrderedItems(Folder).Count;
         var (cols, rows) = Layout.PanelGrid(count, Cols, MaxRows);
         double w = Math.Max(cols, 3) * ItemW + 2 * Pad + 4 + (count > Cols * MaxRows ? 14 : 0);
         double h = 12 + HeaderH + (count == 0 ? 70 : rows * ItemH) + Pad + 4;
@@ -133,9 +133,11 @@ internal sealed class PanelWindow : Window
         _items.Children.Clear();
         _items.ItemWidth = ItemW;
         _items.ItemHeight = ItemH;
-        var items = App.Current.Store.Items(Folder);
+        var items = App.Current.OrderedItems(Folder);
+        _paths = items.ToList();
+        _drag = null;
         _empty.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var path in items) _items.Children.Add(MakeItem(path));
+        for (int i = 0; i < items.Count; i++) _items.Children.Add(MakeItem(items[i], i));
         _scroll.VerticalScrollBarVisibility = items.Count > Cols * MaxRows ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
         if (IsLoaded)
         {
@@ -144,7 +146,100 @@ internal sealed class PanelWindow : Window
         }
     }
 
-    private FrameworkElement MakeItem(string path)
+    // ---- перестановка ярлыков внутри открытой папки ----
+
+    private List<string> _paths = new();
+    private Border? _drag;          // ярлык, который сейчас тянут
+    private int _from, _to;         // откуда взяли и куда встанет
+    private Point _grab;            // где за него схватились (внутри ярлыка)
+    private static readonly Duration Glide = TimeSpan.FromMilliseconds(180);
+
+    private int GridCols => Math.Max(1, (int)Math.Round(_items.ActualWidth / ItemW, 0, MidpointRounding.ToZero));
+    private Point Slot(int i) => new((i % GridCols) * ItemW, (i / GridCols) * ItemH);
+    private static TranslateTransform Shift(UIElement c) => (TranslateTransform)((TransformGroup)c.RenderTransform).Children[1];
+    private static ScaleTransform Lift(UIElement c) => (ScaleTransform)((TransformGroup)c.RenderTransform).Children[0];
+
+    private static void Animate(Animatable t, DependencyProperty p, double to, Duration d, EventHandler? done = null)
+    {
+        var a = new DoubleAnimation(to, d) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+        if (done != null) a.Completed += done;
+        t.BeginAnimation(p, a);
+    }
+
+    private void StartReorder(Border cell, int index, Point grab)
+    {
+        _drag = cell; _from = _to = index; _grab = grab;
+        _dragging = true; // панель не закрывать, пока тянем
+        cell.ToolTip = null;
+        Panel.SetZIndex(cell, 10);
+        Animate(Lift(cell), ScaleTransform.ScaleXProperty, 1.08, Glide);
+        Animate(Lift(cell), ScaleTransform.ScaleYProperty, 1.08, Glide);
+        cell.Opacity = 0.92;
+    }
+
+    /// <summary>Тянущийся ярлык едет за мышью, соседи плавно встают на свои новые клетки.</summary>
+    private void FollowReorder(Point inItems)
+    {
+        if (_drag is not { } cell) return;
+        var home = Slot(_from);
+        var sh = Shift(cell);
+        sh.BeginAnimation(TranslateTransform.XProperty, null);
+        sh.BeginAnimation(TranslateTransform.YProperty, null);
+        sh.X = inItems.X - _grab.X - home.X - cell.Margin.Left;
+        sh.Y = inItems.Y - _grab.Y - home.Y - cell.Margin.Top;
+        int to = ItemOrder.SlotAt(inItems.X, inItems.Y, ItemW, ItemH, GridCols, _paths.Count);
+        if (to == _to) return;
+        _to = to;
+        for (int i = 0; i < _items.Children.Count; i++)
+        {
+            if (i == _from) continue;
+            int n = i;
+            if (_from < _to && i > _from && i <= _to) n = i - 1;
+            else if (_to < _from && i >= _to && i < _from) n = i + 1;
+            var d = Slot(n) - Slot(i);
+            var s = Shift(_items.Children[i]);
+            Animate(s, TranslateTransform.XProperty, d.X, Glide);
+            Animate(s, TranslateTransform.YProperty, d.Y, Glide);
+        }
+    }
+
+    /// <summary>Отпустили внутри папки: ярлык доезжает до своей клетки, порядок запоминается.</summary>
+    private void DropReorder()
+    {
+        if (_drag is not { } cell) return;
+        _drag = null;
+        int from = _from, to = _to;
+        var d = Slot(to) - Slot(from);
+        Animate(Lift(cell), ScaleTransform.ScaleXProperty, 1, Glide);
+        Animate(Lift(cell), ScaleTransform.ScaleYProperty, 1, Glide);
+        Animate(Shift(cell), TranslateTransform.XProperty, d.X, Glide);
+        Animate(Shift(cell), TranslateTransform.YProperty, d.Y, Glide, (_, _) =>
+        {
+            _dragging = false;
+            if (from != to) App.Current.SetOrder(Folder, ItemOrder.Move(_paths, from, to));
+            Rebuild();
+        });
+    }
+
+    /// <summary>Вытянули за край: всё возвращается на места, ярлык уходит наружу как раньше.</summary>
+    private void CancelReorder()
+    {
+        if (_drag is not { } cell) return;
+        _drag = null;
+        cell.Opacity = 1;
+        foreach (UIElement c in _items.Children)
+        {
+            Animate(Shift(c), TranslateTransform.XProperty, 0, Glide);
+            Animate(Shift(c), TranslateTransform.YProperty, 0, Glide);
+            Animate(Lift(c), ScaleTransform.ScaleXProperty, 1, Glide);
+            Animate(Lift(c), ScaleTransform.ScaleYProperty, 1, Glide);
+        }
+        Panel.SetZIndex(cell, 0);
+    }
+
+    private bool Outside(Point inWindow) => inWindow.X < 0 || inWindow.Y < 0 || inWindow.X > ActualWidth || inWindow.Y > ActualHeight;
+
+    private FrameworkElement MakeItem(string path, int index)
     {
         var img = Icons.Image(path, IconSize);
         img.Margin = new Thickness(0, 6, 0, 4);
@@ -160,28 +255,52 @@ internal sealed class PanelWindow : Window
             CornerRadius = new CornerRadius(12), Margin = new Thickness(2),
             Background = Brushes.Transparent, ToolTip = Icons.DisplayName(path),
             Child = Style.PanelCaptions ? new StackPanel { Children = { img, text } } : img,
+            RenderTransformOrigin = new Point(0.5, 0.5),
+            RenderTransform = new TransformGroup { Children = { new ScaleTransform(1, 1), new TranslateTransform() } },
         };
-        cell.MouseEnter += (_, _) => cell.Background = ItemHover;
-        cell.MouseLeave += (_, _) => cell.Background = Brushes.Transparent;
+        cell.MouseEnter += (_, _) => { if (_drag == null) cell.Background = ItemHover; };
+        cell.MouseLeave += (_, _) => { if (_drag != cell) cell.Background = Brushes.Transparent; };
 
         Point? down = null;
-        cell.MouseLeftButtonDown += (_, e) => { down = e.GetPosition(this); cell.CaptureMouse(); e.Handled = true; };
+        Point grab = default;
+        cell.MouseLeftButtonDown += (_, e) =>
+        {
+            if (_drag != null || _dragging) return; // предыдущий ещё доезжает
+            down = e.GetPosition(this); grab = e.GetPosition(cell); cell.CaptureMouse(); e.Handled = true;
+        };
         cell.MouseMove += (_, e) =>
         {
-            if (down is not { } d || e.LeftButton != MouseButtonState.Pressed) return;
+            if (e.LeftButton != MouseButtonState.Pressed) return;
             var p = e.GetPosition(this);
+            if (_drag == cell)
+            {
+                if (Outside(p))
+                {
+                    // за край папки — ярлык уходит на стол или в другую папку
+                    CancelReorder();
+                    cell.ReleaseMouseCapture();
+                    DragOut(cell, path);
+                    return;
+                }
+                FollowReorder(e.GetPosition(_items));
+                return;
+            }
+            if (down is not { } d) return;
             if (Math.Abs(p.X - d.X) < 6 && Math.Abs(p.Y - d.Y) < 6) return;
             down = null;
-            cell.ReleaseMouseCapture();
-            DragOut(cell, path);
+            StartReorder(cell, index, grab);
+            FollowReorder(e.GetPosition(_items));
         };
+        // мышь отобрали (другое окно, Alt+Tab) — ставим туда, где сейчас
+        cell.LostMouseCapture += (_, _) => { if (_drag == cell) DropReorder(); };
         cell.MouseLeftButtonUp += (_, e) =>
         {
             cell.ReleaseMouseCapture();
+            e.Handled = true;
+            if (_drag == cell) { DropReorder(); return; }
             if (down is null) return;
             down = null;
             Launch(path);
-            e.Handled = true;
         };
         if (Style.ShellMenu)
         {
