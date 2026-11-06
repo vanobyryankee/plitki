@@ -65,12 +65,14 @@ internal sealed class HubWindow : Window
         Content = root;
 
         _load.Tick += (_, _) => _loadTick?.Invoke();
-        Closed += (_, _) => { _load.Stop(); App.Current.WidgetsChanged -= OnWidgetsChanged; };
+        Closed += (_, _) => { _load.Stop(); App.Current.WidgetsChanged -= OnWidgetsChanged; App.Current.PresetsChanged -= OnPresetsChanged; };
         App.Current.WidgetsChanged += OnWidgetsChanged;
+        App.Current.PresetsChanged += OnPresetsChanged;
         KeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); };
     }
 
     private void OnWidgetsChanged() { if (_current == "workshop") ShowPage("workshop", animate: false); }
+    private void OnPresetsChanged() { if (_current == "folders") ShowPage("folders", animate: false); }
 
     // ---- стекло Windows 11 ----
 
@@ -369,7 +371,50 @@ internal sealed class HubWindow : Window
             card.MouseLeave += (_, _) => card.Background = Ui.Card;
             page.Children.Add(card);
         }
+        AddPresets(page);
         return page;
+    }
+
+    /// <summary>Расстановки стола: сохранить текущую, поставить, переименовать, удалить.</summary>
+    private void AddPresets(Panel page)
+    {
+        var head = new DockPanel { Margin = new Thickness(0, 26, 0, 4) };
+        var save = Ui.Button(Loc.T("Сохранить текущую…"), () => App.Current.SavePresetAsk(), glyph: Glyphs.Plus);
+        DockPanel.SetDock(save, Dock.Right);
+        head.Children.Add(save);
+        head.Children.Add(new StackPanel
+        {
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                Ui.T(Loc.T("Расстановки"), 20, FontWeights.SemiBold, Ui.Text, Ui.Display),
+                Ui.T(Loc.T("Запоминают всё: где и какого размера папки и виджеты, их вид и сетку. Последняя выбранная возвращается сама после игры или смены мониторов."), 12.5, FontWeights.Normal, Ui.Soft),
+            },
+        });
+        page.Children.Add(head);
+        foreach (var p in App.Current.Config.Presets)
+        {
+            var name = p.Name;
+            bool active = string.Equals(name, App.Current.Config.ActivePreset, StringComparison.CurrentCultureIgnoreCase);
+            var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            names.Children.Add(Ui.T(active ? name + "  ✓" : name, 15.5, FontWeights.SemiBold, Ui.Text, Ui.Display));
+            names.Children.Add(Ui.T(Loc.T("Сохранена {0}", p.Saved.ToString("g", Loc.Culture)) + " · " + Loc.T("{0} папок, {1} виджетов", p.Tiles.Count, p.Widgets.Count(w => w.Enabled)), 12.5, FontWeights.Normal, Ui.Soft));
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            actions.Children.Add(Ui.Button(Loc.T("Поставить"), () => App.Current.ApplyPreset(name), primary: true));
+            actions.Children.Add(new Border { Width = 8 });
+            actions.Children.Add(Ui.Button(Loc.T("Переименовать"), () => App.Current.RenamePreset(name)));
+            actions.Children.Add(new Border { Width = 8 });
+            actions.Children.Add(Ui.Button(Loc.T("Удалить"), () => App.Current.DeletePreset(name)));
+            var row = new DockPanel();
+            DockPanel.SetDock(actions, Dock.Right);
+            row.Children.Add(actions);
+            row.Children.Add(names);
+            page.Children.Add(new Border
+            {
+                CornerRadius = new CornerRadius(13), Background = Ui.Card, BorderBrush = active ? Ui.Accent : Ui.Line, BorderThickness = new Thickness(1),
+                Padding = new Thickness(18, 14, 14, 14), Margin = new Thickness(0, 0, 0, 10), Child = row,
+            });
+        }
     }
 
     private static string Count(int n)

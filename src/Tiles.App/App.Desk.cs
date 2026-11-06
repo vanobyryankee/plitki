@@ -26,6 +26,70 @@ public partial class App
         _saveSoon.Stop(); _saveSoon.Start();
     }
 
+    // ---- расстановки ----
+
+    internal event Action? PresetsChanged;
+
+    /// <summary>Спросить имя и сохранить текущий стол как расстановку.</summary>
+    internal void SavePresetAsk()
+    {
+        var name = Config.ActivePreset ?? Loc.T("Моя расстановка");
+        var dlg = new RenameWindow(name, Loc.T("Название расстановки"));
+        if (dlg.ShowDialog() != true || string.IsNullOrWhiteSpace(dlg.Value)) return;
+        Presets.Save(Config, dlg.Value);
+        SaveConfig();
+        Log($"preset saved {dlg.Value}");
+        RebuildTray();
+        PresetsChanged?.Invoke();
+    }
+
+    /// <summary>Поставить расстановку: места, размеры, вид, виджеты, сетка — всё как при сохранении.</summary>
+    internal void ApplyPreset(string name)
+    {
+        if (Presets.Find(Config, name) is not { } p) return;
+        bool binWas = Config.Widget("bin").Enabled;
+        Presets.Apply(Config, p);
+        ReadGridMetrics();
+        foreach (var w in _widgets.Values.ToList()) { _selection.Remove(w.Id); w.View.Stop(); w.Close(); }
+        _widgets.Clear();
+        StartWidgets();
+        foreach (var w in _tiles) Restyle(w);
+        PlaceAll();
+        bool binNow = Config.Widget("bin").Enabled;
+        if (binNow != binWas) { try { RecycleBin.HideWindowsIcon(binNow); } catch { } }
+        SaveConfig();
+        Log($"preset applied {p.Name}");
+        RebuildTray();
+        WidgetsChanged?.Invoke();
+        PresetsChanged?.Invoke();
+        RefreshGlass();
+    }
+
+    internal void RenamePreset(string name)
+    {
+        if (Presets.Find(Config, name) is not { } p) return;
+        var dlg = new RenameWindow(p.Name, Loc.T("Название расстановки"));
+        if (dlg.ShowDialog() != true || string.IsNullOrWhiteSpace(dlg.Value)) return;
+        bool active = string.Equals(Config.ActivePreset, p.Name, StringComparison.CurrentCultureIgnoreCase);
+        p.Name = dlg.Value.Trim();
+        if (active) Config.ActivePreset = p.Name;
+        SaveConfig();
+        RebuildTray();
+        PresetsChanged?.Invoke();
+    }
+
+    internal void DeletePreset(string name)
+    {
+        if (Presets.Find(Config, name) is not { } p) return;
+        if (MessageBox.Show(Loc.T("Удалить расстановку «{0}»? Папки и виджеты останутся на местах.", p.Name), Loc.T("Плитки"),
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        Config.Presets.Remove(p);
+        if (string.Equals(Config.ActivePreset, p.Name, StringComparison.CurrentCultureIgnoreCase)) Config.ActivePreset = null;
+        SaveConfig();
+        RebuildTray();
+        PresetsChanged?.Invoke();
+    }
+
     // ---- смена экранов ----
 
     /// <summary>Расклад мониторов, под который расставлены плитки («дом»).</summary>
@@ -48,6 +112,8 @@ public partial class App
         if (key == _homeScreens)
         {
             Log($"screens back home {key}");
+            // решение владельца: вернулся домашний расклад — ставим последнюю выбранную расстановку
+            if (Presets.Find(Config, Config.ActivePreset) is { } p) { ApplyPreset(p.Name); return; }
             PlaceAll();
             RefreshGlass();
             return;

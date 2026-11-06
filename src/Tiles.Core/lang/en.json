@@ -255,5 +255,14 @@
  "Как в Windows ({0})": "Same as Windows ({0})",
  "Язык": "Language",
  "Надписи в окне, меню и виджетах. Новые папки получают названия на этом языке.": "Text in the window, menus and widgets. New folders get names in this language.",
- "Музыка из браузера (и YouTube тоже)": "Music from the browser (YouTube too)"
+ "Музыка из браузера (и YouTube тоже)": "Music from the browser (YouTube too)",
+ "Моя расстановка": "My layout",
+ "Название расстановки": "Layout name",
+ "Удалить расстановку «{0}»? Папки и виджеты останутся на местах.": "Delete layout “{0}”? Folders and widgets will stay where they are.",
+ "Расстановки": "Layouts",
+ "Сохранить текущую…": "Save current…",
+ "Запоминают всё: где и какого размера папки и виджеты, их вид и сетку. Последняя выбранная возвращается сама после игры или смены мониторов.": "They remember everything: where folders and widgets are and how big, their look and the grid. The last one you picked comes back by itself after a game or a monitor change.",
+ "Сохранена {0}": "Saved {0}",
+ "{0} папок, {1} виджетов": "{0} folders, {1} widgets",
+ "Поставить": "Apply"
 }

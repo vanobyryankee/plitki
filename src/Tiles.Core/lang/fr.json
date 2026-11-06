@@ -255,5 +255,14 @@
  "Как в Windows ({0})": "Comme Windows ({0})",
  "Язык": "Langue",
  "Надписи в окне, меню и виджетах. Новые папки получают названия на этом языке.": "Textes de la fenêtre, des menus et des widgets. Les nouveaux dossiers sont nommés dans cette langue.",
- "Музыка из браузера (и YouTube тоже)": "Musique du navigateur (YouTube aussi)"
+ "Музыка из браузера (и YouTube тоже)": "Musique du navigateur (YouTube aussi)",
+ "Моя расстановка": "Ma disposition",
+ "Название расстановки": "Nom de la disposition",
+ "Удалить расстановку «{0}»? Папки и виджеты останутся на местах.": "Supprimer la disposition « {0} » ? Les dossiers et widgets restent en place.",
+ "Расстановки": "Dispositions",
+ "Сохранить текущую…": "Enregistrer l’actuelle…",
+ "Запоминают всё: где и какого размера папки и виджеты, их вид и сетку. Последняя выбранная возвращается сама после игры или смены мониторов.": "Elles mémorisent tout : position et taille des dossiers et widgets, leur apparence et la grille. La dernière choisie revient d’elle-même après un jeu ou un changement d’écran.",
+ "Сохранена {0}": "Enregistrée {0}",
+ "{0} папок, {1} виджетов": "{0} dossiers, {1} widgets",
+ "Поставить": "Appliquer"
 }

@@ -683,6 +683,21 @@ public partial class App : Application
         menu.Items.Add(Loc.T("Открыть «Плитки»"), null, (_, _) => OpenHub("workshop"));
         menu.Items.Add(Loc.T("Мастерская виджетов"), null, (_, _) => OpenHub("workshop"));
         menu.Items.Add(Loc.T("Обновить"), null, (_, _) => RefreshEverything());
+        var presets = new Forms.ToolStripMenuItem(Loc.T("Расстановки"));
+        presets.DropDownItems.Add(Loc.T("Сохранить текущую…"), null, (_, _) => SavePresetAsk());
+        if (Config.Presets.Count > 0) presets.DropDownItems.Add(new Forms.ToolStripSeparator());
+        foreach (var p in Config.Presets)
+        {
+            var name = p.Name;
+            var item = new Forms.ToolStripMenuItem(name)
+            {
+                Checked = string.Equals(name, Config.ActivePreset, StringComparison.CurrentCultureIgnoreCase),
+                ToolTipText = p.Saved.ToString("g", Loc.Culture),
+            };
+            item.Click += (_, _) => ApplyPreset(name);
+            presets.DropDownItems.Add(item);
+        }
+        menu.Items.Add(presets);
         menu.Items.Add(Loc.T("Новая папка"), null, (_, _) => NewFolder());
         menu.Items.Add(Loc.T("Показать / спрятать сетку"), null, (_, _) => ToggleGrid());
         menu.Items.Add(Loc.T("Редактировать сетку…"), null, (_, _) => EditGrid());

@@ -50,6 +50,9 @@ public sealed class TilesConfig
     public bool EcoMode { get; set; }
     /// <summary>Язык программы: код из Loc.Codes, "" — как в Windows.</summary>
     public string Language { get; set; } = "";
+    /// <summary>Сохранённые расстановки стола и последняя выбранная (её ставим сами после игры/смены мониторов).</summary>
+    public List<LayoutPreset> Presets { get; set; } = new();
+    public string? ActivePreset { get; set; }
     /// <summary>Ярлык «Плитки» на стол уже клали (удалённый не возвращаем).</summary>
     public bool ShortcutsMade { get; set; }
     /// <summary>Своя клетка сетки (подогнанная руками под ярлыки на столе); NaN — как у Windows.</summary>

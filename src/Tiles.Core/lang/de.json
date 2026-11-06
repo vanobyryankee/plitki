@@ -255,5 +255,14 @@
  "Как в Windows ({0})": "Wie Windows ({0})",
  "Язык": "Sprache",
  "Надписи в окне, меню и виджетах. Новые папки получают названия на этом языке.": "Texte im Fenster, in Menüs und Widgets. Neue Ordner erhalten Namen in dieser Sprache.",
- "Музыка из браузера (и YouTube тоже)": "Musik aus dem Browser (auch YouTube)"
+ "Музыка из браузера (и YouTube тоже)": "Musik aus dem Browser (auch YouTube)",
+ "Моя расстановка": "Mein Layout",
+ "Название расстановки": "Name des Layouts",
+ "Удалить расстановку «{0}»? Папки и виджеты останутся на местах.": "Layout „{0}“ löschen? Ordner und Widgets bleiben, wo sie sind.",
+ "Расстановки": "Layouts",
+ "Сохранить текущую…": "Aktuelles speichern…",
+ "Запоминают всё: где и какого размера папки и виджеты, их вид и сетку. Последняя выбранная возвращается сама после игры или смены мониторов.": "Merken sich alles: Position und Größe von Ordnern und Widgets, ihr Aussehen und das Raster. Das zuletzt gewählte kehrt nach einem Spiel oder Monitorwechsel von selbst zurück.",
+ "Сохранена {0}": "Gespeichert {0}",
+ "{0} папок, {1} виджетов": "{0} Ordner, {1} Widgets",
+ "Поставить": "Anwenden"
 }

@@ -255,5 +255,14 @@
  "Как в Windows ({0})": "Windows ile aynı ({0})",
  "Язык": "Dil",
  "Надписи в окне, меню и виджетах. Новые папки получают названия на этом языке.": "Pencere, menü ve widget metinleri. Yeni klasörler bu dilde adlandırılır.",
- "Музыка из браузера (и YouTube тоже)": "Tarayıcıdan müzik (YouTube da)"
+ "Музыка из браузера (и YouTube тоже)": "Tarayıcıdan müzik (YouTube da)",
+ "Моя расстановка": "Düzenim",
+ "Название расстановки": "Düzen adı",
+ "Удалить расстановку «{0}»? Папки и виджеты останутся на местах.": "“{0}” düzeni silinsin mi? Klasörler ve widget’lar yerinde kalır.",
+ "Расстановки": "Düzenler",
+ "Сохранить текущую…": "Mevcut olanı kaydet…",
+ "Запоминают всё: где и какого размера папки и виджеты, их вид и сетку. Последняя выбранная возвращается сама после игры или смены мониторов.": "Her şeyi hatırlar: klasör ve widget’ların yeri ve boyutu, görünümü ve ızgara. Son seçilen, bir oyundan veya monitör değişiminden sonra kendiliğinden geri gelir.",
+ "Сохранена {0}": "Kaydedildi {0}",
+ "{0} папок, {1} виджетов": "{0} klasör, {1} widget",
+ "Поставить": "Uygula"
 }
